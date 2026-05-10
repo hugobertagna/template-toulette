@@ -7,12 +7,6 @@ function escapeHtml(text) {
     .replace(/"/g, '&quot;');
 }
 
-function csvEscapeCell(value) {
-  const v = String(value ?? '');
-  if (/[,"\r\n]/.test(v)) return '"' + v.replace(/"/g, '""') + '"';
-  return v;
-}
-
 /** Adresses destinataires BCC depuis OWNER_EMAIL ("a@x.fr, b@y.fr"). */
 function parseOwnerEmails(raw) {
   if (!raw || typeof raw !== 'string') return [];
@@ -20,59 +14,6 @@ function parseOwnerEmails(raw) {
     .split(',')
     .map((x) => x.trim().toLowerCase())
     .filter((x) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x));
-}
-
-/**
- * Concatène une ligne dans un CSV stocké sur Vercel Blob (optionnel).
- * Nécessite BLOB_READ_WRITE_TOKEN sur Vercel (Storage → Blob).
- */
-async function appendLeadToBlob({ email, prize, couponCode }) {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!token) return;
-
-  const filename = process.env.LEADS_CSV_FILENAME || 'roulette-leads.csv';
-  const row = [
-    new Date().toISOString(),
-    email,
-    prize,
-    couponCode,
-  ].map(csvEscapeCell);
-
-  try {
-    const { list, put } = await import('@vercel/blob');
-
-    let existing = '';
-    try {
-      const listing = await list({ prefix: filename, token, limit: 50 });
-      const blob =
-        listing.blobs.find(function (b) {
-          return b.pathname === filename;
-        }) || listing.blobs.find(function (b) {
-          return b.pathname.endsWith(filename);
-        });
-      if (blob && blob.downloadUrl) {
-        const r = await fetch(blob.downloadUrl);
-        if (r.ok) existing = await r.text();
-      }
-    } catch (_) {
-      /* fichier absent */
-    }
-
-    const line = row.join(',') + '\n';
-    const header = 'timestamp_iso,email,prize,coupon_code\n';
-    const body = existing.trim()
-      ? (existing.endsWith('\n') ? existing + line : `${existing}\n${line}`)
-      : header + line;
-
-    await put(filename, body, {
-      access: 'public',
-      token,
-      contentType: 'text/csv; charset=utf-8',
-      addRandomSuffix: false,
-    });
-  } catch (err) {
-    console.error('[send-coupon] Blob CSV', err);
-  }
 }
 
 module.exports = async function handler(req, res) {
@@ -187,8 +128,6 @@ module.exports = async function handler(req, res) {
       );
       return;
     }
-
-    await appendLeadToBlob({ email, prize, couponCode });
 
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
