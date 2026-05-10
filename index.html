@@ -108,6 +108,11 @@
             width: 100%;
             font-size: 1rem;
         }
+
+        .btn-send:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -130,7 +135,8 @@
             <p>Vous avez gagné : <strong id="prize-name"></strong></p>
             <p>Entrez votre email pour recevoir votre coupon :</p>
             <input type="email" id="email" placeholder="votre@email.com">
-            <button class="btn-send" onclick="sendCoupon()">Recevoir mon coupon</button>
+            <button id="sendBtn" type="button" class="btn-send" onclick="sendCoupon()">Recevoir mon coupon</button>
+            <p id="send-error" style="display:none;color:#e74c3c;margin-top:12px;font-size:0.9rem;"></p>
         </div>
     </div>
 
@@ -232,20 +238,51 @@
             document.getElementById('modal').style.display = 'flex';
         }
 
-        function sendCoupon() {
-            const email = document.getElementById('email').value;
+        async function sendCoupon() {
+            const emailEl = document.getElementById('email');
             const prize = document.getElementById('prize-name').innerText;
             const couponCode = "RESTO-" + Math.random().toString(36).slice(2, 8).toUpperCase();
+            const sendBtn = document.getElementById('sendBtn');
+            const errEl = document.getElementById('send-error');
 
-            if (!email) { alert("Veuillez entrer un email"); return; }
+            const email = (emailEl.value || '').trim();
 
-            // ICI : Tu peux intégrer EmailJS ou un Webhook Make/Zapier
-            console.log(`Envoi à ${email}: Vous avez gagné ${prize}. Code: ${couponCode}`);
-            
-            alert(`BRAVO ! Votre coupon ${couponCode} a été envoyé à ${email}.`);
-            
-            localStorage.setItem(playedStorageKey(), 'true');
-            location.reload();
+            if (!email) {
+                alert("Veuillez entrer un email");
+                return;
+            }
+
+            errEl.style.display = 'none';
+            errEl.textContent = '';
+            sendBtn.disabled = true;
+
+            try {
+                const res = await fetch('/api/send-coupon', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, prize, couponCode }),
+                });
+                const data = await res.json().catch(function () { return {}; });
+
+                if (!res.ok) {
+                    errEl.textContent = data.error || "L'envoi a échoué. Réessayez plus tard.";
+                    errEl.style.display = 'block';
+                    sendBtn.disabled = false;
+                    return;
+                }
+
+                alert(
+                    "Un email vient de partir vers " + email + " avec le code " + couponCode + ". " +
+                    "Vérifiez aussi les courriers indésirables."
+                );
+                localStorage.setItem(playedStorageKey(), 'true');
+                location.reload();
+            } catch (e) {
+                errEl.textContent =
+                    "Impossible de joindre le serveur (connexion ou site non déployé avec l'API).";
+                errEl.style.display = 'block';
+                sendBtn.disabled = false;
+            }
         }
 
         drawWheel();
