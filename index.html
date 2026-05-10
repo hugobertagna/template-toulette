@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>La Roue de la Chance — Restaurant</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,9 +26,11 @@
         body {
             margin: 0;
             min-height: 100vh;
+            min-height: 100dvh;
             font-family: var(--font-ui);
             color: var(--cream);
             background: var(--ink);
+            overflow-x: hidden;
         }
 
         /* Fond avec image restaurant */
@@ -46,16 +48,26 @@
             position: relative;
             z-index: 1;
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: clamp(1rem, 4vw, 2.5rem) clamp(1rem, 5vw, 2rem) 3rem;
+            width: 100%;
+            max-width: 720px;
+            margin-inline: auto;
+            box-sizing: border-box;
+            padding-top: max(1.25rem, calc(env(safe-area-inset-top, 0px) + 0.75rem));
+            padding-right: max(1rem, env(safe-area-inset-right, 0px));
+            padding-bottom: max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1.25rem));
+            padding-left: max(1rem, env(safe-area-inset-left, 0px));
         }
 
         header.site-header {
             text-align: center;
             max-width: 40rem;
-            margin-bottom: clamp(1.25rem, 4vw, 2rem);
+            width: 100%;
+            padding-inline: 0.25rem;
+            margin-bottom: clamp(1rem, 3.5vw, 2rem);
         }
 
         .badge {
@@ -73,20 +85,24 @@
 
         header.site-header h1 {
             font-family: var(--font-display);
-            font-size: clamp(2.1rem, 6vw, 3.35rem);
+            font-size: clamp(1.85rem, 8.5vw + 0.6rem, 3.35rem);
             font-weight: 700;
-            line-height: 1.08;
+            line-height: 1.1;
             margin: 0 0 0.5rem;
             color: #fff;
             text-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+            text-wrap: balance;
         }
 
         header.site-header p.lead {
             margin: 0;
-            font-size: clamp(0.98rem, 2.4vw, 1.1rem);
+            font-size: clamp(0.9rem, 3.5vw, 1.1rem);
             font-weight: 400;
             line-height: 1.55;
             color: rgba(247, 240, 230, 0.88);
+            text-wrap: pretty;
+            hyphens: auto;
+            -webkit-hyphens: auto;
         }
 
         /* Galerie décorative */
@@ -110,28 +126,31 @@
 
         /* Carte roue */
         .wheel-card {
-            width: min(100%, 640px);
+            width: 100%;
+            max-width: 640px;
             background: var(--glass);
             backdrop-filter: blur(14px);
             -webkit-backdrop-filter: blur(14px);
             border: 1px solid var(--glass-border);
             border-radius: clamp(18px, 4vw, 28px);
-            padding: clamp(1.25rem, 4vw, 2rem);
+            padding: clamp(0.85rem, 3.5vw, 2rem) clamp(0.75rem, 3vw, 2rem);
             box-shadow: var(--shadow-deep), inset 0 1px 0 rgba(255, 255, 255, 0.5);
         }
 
         .wheel-card-inner {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: clamp(1rem, 3vw, 1.5rem);
+            align-items: stretch;
+            gap: clamp(0.85rem, 2.5vw, 1.5rem);
+            /* Espace pour le témoin au-dessus de la roue */
+            padding-top: clamp(0.5rem, 2vw, 1.25rem);
         }
 
         .wheel-container {
             position: relative;
-            width: min(92vw, 520px);
+            width: 100%;
+            max-width: min(520px, 100%);
             aspect-ratio: 1;
-            max-width: 520px;
             margin: 0 auto;
             filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.35));
         }
@@ -153,7 +172,7 @@
         /* Flèche / témoin stylé */
         .pointer-wrap {
             position: absolute;
-            top: clamp(-26px, -4.5vw, -18px);
+            top: clamp(-30px, -6vw, -20px);
             left: 50%;
             transform: translateX(-50%);
             z-index: 10;
@@ -170,8 +189,10 @@
         .btn-spin {
             font-family: var(--font-ui);
             margin-top: 0;
-            padding: clamp(14px, 3vw, 17px) clamp(2rem, 8vw, 3rem);
-            font-size: clamp(0.92rem, 2.8vw, 1.08rem);
+            align-self: center;
+            width: min(100%, 22rem);
+            padding: clamp(14px, 3vw, 17px) clamp(1.25rem, 5vw, 3rem);
+            font-size: clamp(0.85rem, 3.2vw, 1.08rem);
             font-weight: 700;
             letter-spacing: 0.06em;
             text-transform: uppercase;
@@ -208,11 +229,13 @@
         }
 
         footer.footnote {
-            margin-top: clamp(1.75rem, 5vw, 2.75rem);
+            margin-top: clamp(1.5rem, 4vw, 2.75rem);
             text-align: center;
-            font-size: 0.78rem;
+            font-size: clamp(0.72rem, 2.5vw, 0.8rem);
             color: rgba(247, 240, 230, 0.45);
+            width: 100%;
             max-width: 28rem;
+            padding-inline: 0.5rem;
             line-height: 1.5;
         }
 
@@ -220,10 +243,12 @@
             margin-top: clamp(1rem, 3vw, 1.35rem);
             padding-top: 1rem;
             border-top: 1px solid rgba(255, 255, 255, 0.08);
-            width: min(100%, 640px);
+            width: 100%;
+            max-width: 640px;
+            padding-inline: 0.5rem;
             text-align: center;
             font-family: var(--font-ui);
-            font-size: 0.8rem;
+            font-size: clamp(0.72rem, 2.8vw, 0.8rem);
             color: rgba(247, 240, 230, 0.55);
         }
 
@@ -248,9 +273,13 @@
             background: rgba(10, 8, 6, 0.82);
             backdrop-filter: blur(6px);
             justify-content: center;
-            align-items: center;
+            align-items: safe center;
             z-index: 100;
-            padding: 1rem;
+            padding: max(0.75rem, env(safe-area-inset-top))
+                     max(0.75rem, env(safe-area-inset-right))
+                     max(0.75rem, env(safe-area-inset-bottom))
+                     max(0.75rem, env(safe-area-inset-left));
+            overflow-y: auto;
         }
 
         .modal-content {
@@ -262,6 +291,9 @@
             text-align: center;
             max-width: 420px;
             width: 100%;
+            max-height: min(90vh, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem));
+            overflow-y: auto;
+            margin: auto;
             border: 1px solid rgba(201, 162, 39, 0.35);
             box-shadow: var(--shadow-deep);
             color: var(--ink);
@@ -339,6 +371,16 @@
             .btn-spin:active:not(:disabled),
             .btn-send:hover:not(:disabled) {
                 transform: none;
+            }
+        }
+
+        @media (min-width: 960px) {
+            .layout {
+                max-width: min(920px, 94vw);
+            }
+
+            header.site-header {
+                max-width: none;
             }
         }
     </style>
@@ -482,7 +524,8 @@
                 ctx.save();
                 ctx.translate(cx, cy);
                 ctx.rotate(midAngle);
-                const fontPx = Math.max(11, Math.round(size * 0.042));
+                /* Lisible du très petit mobile au bureau */
+                const fontPx = Math.max(9, Math.min(14, Math.round(size * 0.038)));
                 ctx.font = "600 " + fontPx + "px Outfit, system-ui, sans-serif";
                 ctx.textAlign = "left";
                 ctx.textBaseline = "middle";
@@ -492,7 +535,7 @@
                 ctx.shadowOffsetX = 1;
                 ctx.shadowOffsetY = 1;
                 const textR = outerR * 0.62;
-                wrapSectorText(ctx, prize.label, textR, outerR * 0.36, fontPx);
+                wrapSectorText(ctx, prize.label, textR, outerR * ((size < 340) ? 0.33 : 0.36), fontPx);
                 ctx.restore();
 
                 startAngle += sliceAngle;
