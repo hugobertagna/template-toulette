@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Roue de la Chance - Restaurant</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #e67e22;
+            --bg-color: #fdfaf6;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        header { text-align: center; margin-bottom: 20px; }
+        h1 { color: var(--primary-color); margin-bottom: 5px; }
+
+        /* Style de la Roue */
+        .wheel-container {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            margin: 20px auto;
+        }
+
+        #canvas {
+            border-radius: 50%;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            border: 8px solid white;
+        }
+
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0; height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 35px solid var(--accent-color);
+            z-index: 10;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
+        }
+
+        .btn-spin {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: white;
+            background-color: var(--accent-color);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.3s;
+            box-shadow: 0 5px 15px rgba(230, 126, 34, 0.4);
+        }
+
+        .btn-spin:disabled { background-color: #ccc; cursor: not-allowed; transform: none; }
+        .btn-spin:active { transform: scale(0.95); }
+
+        /* Modal (Pop-up de gain) */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center; align-items: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 90%;
+            width: 400px;
+        }
+
+        input[type="email"] {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .btn-send {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🎡 Tentez votre chance !</h1>
+        <p>Tournez la roue et gagnez un cadeau immédiat.</p>
+    </header>
+
+    <div class="wheel-container">
+        <div class="pointer"></div>
+        <canvas id="canvas" width="320" height="320"></canvas>
+    </div>
+
+    <button id="spinBtn" class="btn-spin" onclick="spinWheel()">LANCER LA ROUE</button>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h2>Félicitations ! 🎉</h2>
+            <p>Vous avez gagné : <strong id="prize-name"></strong></p>
+            <p>Entrez votre email pour recevoir votre coupon :</p>
+            <input type="email" id="email" placeholder="votre@email.com">
+            <button class="btn-send" onclick="sendCoupon()">Recevoir mon coupon</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION DES PROBABILITÉS (WEIGHT) ---
+        // Le "weight" définit la chance. Total = somme des weights.
+        const prizes = [
+            { label: "Café Offert", weight: 50, color: "#f1c40f" },
+            { label: "Dessert Maison", weight: 30, color: "#e67e22" },
+            { label: "-10% Addition", weight: 15, color: "#e74c3c" },
+            { label: "MENU GAGNÉ", weight: 5, color: "#8e44ad" }
+        ];
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const spinBtn = document.getElementById('spinBtn');
+        let currentRotation = 0;
+        let isSpinning = false;
+
+        function playedStorageKey() {
+            const today = new Date().toISOString().slice(0, 10);
+            return 'hasPlayed_' + today;
+        }
+
+        // 1. Dessiner la roue dynamiquement
+        function drawWheel() {
+            const totalWeight = prizes.reduce((s, p) => s + p.weight, 0);
+            let startAngle = 0;
+
+            prizes.forEach((prize) => {
+                const sliceAngle = (prize.weight / totalWeight) * 2 * Math.PI;
+                
+                ctx.beginPath();
+                ctx.fillStyle = prize.color;
+                ctx.moveTo(160, 160);
+                ctx.arc(160, 160, 160, startAngle, startAngle + sliceAngle);
+                ctx.fill();
+                ctx.strokeStyle = "rgba(0,0,0,0.1)";
+                ctx.stroke();
+
+                // Texte
+                ctx.save();
+                ctx.translate(160, 160);
+                ctx.rotate(startAngle + sliceAngle / 2);
+                ctx.fillStyle = "white";
+                ctx.font = "bold 14px Arial";
+                ctx.fillText(prize.label, 60, 5);
+                ctx.restore();
+
+                startAngle += sliceAngle;
+            });
+        }
+
+        // 2. Logique du lancer
+        function spinWheel() {
+            if (isSpinning) return;
+
+            // Une participation par jour (stockage local du navigateur)
+            if (localStorage.getItem(playedStorageKey())) {
+                alert("Vous avez déjà tenté votre chance aujourd'hui !");
+                return;
+            }
+
+            isSpinning = true;
+            spinBtn.disabled = true;
+
+            const extraSpins = 5 + Math.random() * 5; 
+            const randomRotation = Math.floor(Math.random() * 360);
+            currentRotation += (extraSpins * 360) + randomRotation;
+
+            canvas.style.transition = "transform 4s cubic-bezier(0.15, 0, 0.15, 1)";
+            canvas.style.transform = `rotate(${currentRotation}deg)`;
+
+            setTimeout(() => {
+                isSpinning = false;
+                determinePrize(currentRotation % 360);
+            }, 4000);
+        }
+
+        // 3. Calculer quel lot est sous le curseur
+        function determinePrize(deg) {
+            const totalWeight = prizes.reduce((s, p) => s + p.weight, 0);
+            // On ajuste car la rotation tourne la roue, le curseur est en haut (270 deg)
+            let actualDeg = (360 - deg + 270) % 360;
+            let currentDeg = 0;
+
+            for (let i = 0; i < prizes.length; i++) {
+                let sliceDeg = (prizes[i].weight / totalWeight) * 360;
+                if (actualDeg >= currentDeg && actualDeg < currentDeg + sliceDeg) {
+                    showModal(prizes[i].label);
+                    break;
+                }
+                currentDeg += sliceDeg;
+            }
+        }
+
+        function showModal(label) {
+            document.getElementById('prize-name').innerText = label;
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function sendCoupon() {
+            const email = document.getElementById('email').value;
+            const prize = document.getElementById('prize-name').innerText;
+            const couponCode = "RESTO-" + Math.random().toString(36).slice(2, 8).toUpperCase();
+
+            if (!email) { alert("Veuillez entrer un email"); return; }
+
+            // ICI : Tu peux intégrer EmailJS ou un Webhook Make/Zapier
+            console.log(`Envoi à ${email}: Vous avez gagné ${prize}. Code: ${couponCode}`);
+            
+            alert(`BRAVO ! Votre coupon ${couponCode} a été envoyé à ${email}.`);
+            
+            localStorage.setItem(playedStorageKey(), 'true');
+            location.reload();
+        }
+
+        drawWheel();
+    </script>
+</body>
+</html>
