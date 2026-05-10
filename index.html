@@ -318,23 +318,34 @@
             color: var(--burgundy);
         }
 
-        input[type="email"] {
-            width: 100%;
-            padding: 14px 16px;
-            margin: 16px 0 12px;
-            border: 1px solid rgba(26, 20, 16, 0.15);
-            border-radius: 12px;
-            font-family: var(--font-ui);
-            font-size: 1rem;
+        .coupon-code-block {
+            font-family: ui-monospace, "Cascadia Code", monospace;
+            font-size: clamp(1.15rem, 4.5vw, 1.45rem);
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: var(--ink);
             background: #fff;
+            border: 2px dashed rgba(201, 162, 39, 0.65);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin: 14px 0 10px;
+            user-select: all;
         }
 
-        input[type="email"]:focus {
-            outline: 2px solid var(--gold);
-            outline-offset: 1px;
+        .modal-hint {
+            font-size: 0.86rem;
+            line-height: 1.45;
+            color: rgba(26, 20, 16, 0.72);
+            margin: 0.35rem 0 1rem;
         }
 
-        .btn-send {
+        .modal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-download {
             font-family: var(--font-ui);
             font-weight: 700;
             background: linear-gradient(165deg, #2d8659 0%, #1f6b47 100%);
@@ -349,27 +360,31 @@
             transition: transform 0.15s ease, box-shadow 0.15s;
         }
 
-        .btn-send:hover:not(:disabled) {
+        .btn-download:hover:not(:disabled) {
             transform: translateY(-1px);
         }
 
-        .btn-send:disabled {
-            background: #95a5a6;
-            cursor: not-allowed;
-            box-shadow: none;
+        .btn-modal-close {
+            font-family: var(--font-ui);
+            font-weight: 600;
+            background: transparent;
+            color: rgba(26, 20, 16, 0.65);
+            border: 1px solid rgba(26, 20, 16, 0.2);
+            padding: 12px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 0.95rem;
         }
 
-        #send-error {
-            display: none;
-            color: #c0392b;
-            margin-top: 12px;
-            font-size: 0.875rem;
+        .btn-modal-close:hover {
+            background: rgba(26, 20, 16, 0.05);
         }
 
         @media (prefers-reduced-motion: reduce) {
             .btn-spin:hover:not(:disabled),
             .btn-spin:active:not(:disabled),
-            .btn-send:hover:not(:disabled) {
+            .btn-download:hover:not(:disabled) {
                 transform: none;
             }
         }
@@ -439,10 +454,15 @@
         <div class="modal-content">
             <h2 id="modal-title">Quelle chance !</h2>
             <p>Vous remportez : <strong id="prize-name"></strong></p>
-            <p>Indiquez votre adresse e-mail pour recevoir votre coupon :</p>
-            <input type="email" id="email" placeholder="vous@exemple.com" autocomplete="email">
-            <button id="sendBtn" type="button" class="btn-send" onclick="sendCoupon()">Recevoir mon coupon</button>
-            <p id="send-error"></p>
+            <p>Votre code coupon :</p>
+            <div id="coupon-code-display" class="coupon-code-block" aria-live="polite"></div>
+            <p class="modal-hint">
+                <strong>Téléchargez votre coupon</strong> (image PNG) ou faites une <strong>capture d’écran</strong> de cette fenêtre pour le garder.
+            </p>
+            <div class="modal-actions">
+                <button id="downloadBtn" type="button" class="btn-download" onclick="downloadCouponImage()">Télécharger mon coupon</button>
+                <button id="modalCloseBtn" type="button" class="btn-modal-close" onclick="closeWinModal()">Terminé</button>
+            </div>
         </div>
     </div>
 
@@ -663,55 +683,88 @@
             }
         }
 
+        var activePrizeLabel = "";
+        var activeCouponCode = "";
+
+        function randomCouponCode() {
+            return "RESTO-" + Math.random().toString(36).slice(2, 10).toUpperCase();
+        }
+
         function showModal(label) {
+            activePrizeLabel = label;
+            activeCouponCode = randomCouponCode();
             document.getElementById("prize-name").innerText = label;
+            document.getElementById("coupon-code-display").innerText = activeCouponCode;
             document.getElementById("modal").style.display = "flex";
         }
 
-        async function sendCoupon() {
-            const emailEl = document.getElementById("email");
-            const prize = document.getElementById("prize-name").innerText;
-            const couponCode = "RESTO-" + Math.random().toString(36).slice(2, 8).toUpperCase();
-            const sendBtn = document.getElementById("sendBtn");
-            const errEl = document.getElementById("send-error");
-            const email = (emailEl.value || "").trim();
+        function downloadCouponImage() {
+            if (!activeCouponCode) return;
 
-            if (!email) {
-                alert("Veuillez entrer un e-mail.");
-                return;
-            }
+            var w = 420;
+            var h = 260;
+            var dpr = Math.min(window.devicePixelRatio || 1, 2);
+            var c = document.createElement("canvas");
+            c.width = Math.round(w * dpr);
+            c.height = Math.round(h * dpr);
+            var g = c.getContext("2d");
+            g.scale(dpr, dpr);
 
-            errEl.style.display = "none";
-            errEl.textContent = "";
-            sendBtn.disabled = true;
+            var grd = g.createLinearGradient(0, 0, w, h);
+            grd.addColorStop(0, "#fffefb");
+            grd.addColorStop(1, "#f0e6d8");
+            g.fillStyle = grd;
+            g.fillRect(0, 0, w, h);
 
-            try {
-                const res = await fetch("/api/send-coupon", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: email, prize: prize, couponCode: couponCode }),
-                });
-                const data = await res.json().catch(function () { return {}; });
+            g.strokeStyle = "#c9a227";
+            g.lineWidth = 4;
+            g.strokeRect(10, 10, w - 20, h - 20);
 
-                if (!res.ok) {
-                    errEl.textContent = data.error || "L'envoi a échoué. Réessayez plus tard.";
-                    errEl.style.display = "block";
-                    sendBtn.disabled = false;
-                    return;
-                }
+            g.fillStyle = "#6b1c23";
+            g.font = "600 26px Outfit, Georgia, serif";
+            g.textAlign = "center";
+            g.fillText("Coupon — Roue des saveurs", w / 2, 54);
 
-                alert(
-                    "Un e-mail a été envoyé à " + email + " avec le code " + couponCode + ". " +
-                    "Pensez à vérifier les indésirables."
-                );
-                localStorage.setItem(playedStorageKey(), "true");
-                location.reload();
-            } catch (e) {
-                errEl.textContent =
-                    "Connexion impossible au serveur (API indisponible ou fichier ouvert en local).";
-                errEl.style.display = "block";
-                sendBtn.disabled = false;
-            }
+            g.fillStyle = "#333";
+            g.font = "500 17px Outfit, sans-serif";
+            var prizeLine = activePrizeLabel.length > 42
+                ? activePrizeLabel.slice(0, 40) + "…"
+                : activePrizeLabel;
+            g.fillText(prizeLine, w / 2, 100);
+
+            g.fillStyle = "#1a1410";
+            g.font = "700 28px ui-monospace, monospace";
+            g.fillText(activeCouponCode, w / 2, 155);
+
+            g.fillStyle = "rgba(26,20,16,0.55)";
+            g.font = "500 13px Outfit, sans-serif";
+            g.fillText("À présenter au restaurant", w / 2, 200);
+
+            c.toBlob(
+                function (blob) {
+                    if (!blob) {
+                        alert("Impossible de générer le fichier.");
+                        return;
+                    }
+                    var url = URL.createObjectURL(blob);
+                    var a = document.createElement("a");
+                    a.href = url;
+                    a.download = "coupon-" + activeCouponCode + ".png";
+                    a.rel = "noopener";
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                },
+                "image/png",
+                1
+            );
+        }
+
+        function closeWinModal() {
+            document.getElementById("modal").style.display = "none";
+            localStorage.setItem(playedStorageKey(), "true");
+            location.reload();
         }
 
         if (document.fonts && document.fonts.ready) {
