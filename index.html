@@ -216,6 +216,30 @@
             line-height: 1.5;
         }
 
+        footer.site-credit {
+            margin-top: clamp(1rem, 3vw, 1.35rem);
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            width: min(100%, 640px);
+            text-align: center;
+            font-family: var(--font-ui);
+            font-size: 0.8rem;
+            color: rgba(247, 240, 230, 0.55);
+        }
+
+        footer.site-credit a {
+            color: var(--gold-light);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.15s ease;
+        }
+
+        footer.site-credit a:hover {
+            color: #fff8e0;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
         /* Modal */
         .modal {
             display: none;
@@ -363,6 +387,10 @@
         </div>
 
         <footer class="footnote">Une participation par jour et par appareil. Les lots sont communiqués à titre promotionnel.</footer>
+
+        <footer class="site-credit">
+            Made by Hugo BERTAGNA — <a href="https://hugobertagna.fr" target="_blank" rel="noopener noreferrer">hugobertagna.fr</a>
+        </footer>
     </div>
 
     <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
